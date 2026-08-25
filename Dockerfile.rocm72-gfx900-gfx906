@@ -1,0 +1,30 @@
+# Stage 1: obtain legacy gfx900 rocBLAS/Tensile payloads
+FROM rocm/dev-ubuntu-22.04:6.3.4 AS rocm6-libs
+
+RUN apt-get update -qq && \
+    apt-get install -y -qq --no-install-recommends rocblas && \
+    rm -rf /var/lib/apt/lists/*
+
+# Stage 2: ROCm 7.2.1 image with gfx906 support restored
+FROM mixa3607/rocm-gfx906:7.2.1-complete
+
+COPY --from=rocm6-libs \
+    /opt/rocm/lib/rocblas/library/ \
+    /tmp/rocm6-rocblas/
+
+RUN set -eux; \
+    ROCBLAS_LIB="/opt/rocm/lib/rocblas/library"; \
+    echo "=== Existing gfx906 files ==="; \
+    find "$ROCBLAS_LIB" -maxdepth 1 -type f | grep gfx906 | head || true; \
+    echo "=== Adding gfx900 files from ROCm 6.3.4 ==="; \
+    find /tmp/rocm6-rocblas -maxdepth 1 -type f -name '*gfx900*' \
+      -exec cp -v {} "$ROCBLAS_LIB/" \;; \
+    echo "=== Result ==="; \
+    echo "gfx900 files:"; \
+    find "$ROCBLAS_LIB" -maxdepth 1 -type f | grep gfx900 | wc -l; \
+    echo "gfx906 files:"; \
+    find "$ROCBLAS_LIB" -maxdepth 1 -type f | grep gfx906 | wc -l; \
+    rm -rf /tmp/rocm6-rocblas
+
+WORKDIR /workspace
+CMD ["/bin/bash"]
