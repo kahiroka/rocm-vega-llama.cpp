@@ -26,5 +26,17 @@ RUN set -eux; \
     find "$ROCBLAS_LIB" -maxdepth 1 -type f | grep gfx906 | wc -l; \
     rm -rf /tmp/rocm6-rocblas
 
+# Stage 3: Install CUDA Toolkit
+# Install NVIDIA Container Toolkit on the host as well.
+# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+RUN apt-get update && \
+    apt-get -y install wget && \
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
+    dpkg -i cuda-keyring_1.1-1_all.deb && \
+    apt-get update && \
+    apt-get -y install cuda-toolkit-13-4
+
+ENV PATH="${PATH}:/usr/local/cuda/bin"
+
 WORKDIR /workspace
 CMD ["/bin/bash"]
